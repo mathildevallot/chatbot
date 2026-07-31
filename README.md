@@ -1,6 +1,6 @@
 # PLUi RAG – Extraction et Embeddings
 
-Ce projet contient deux notebooks Google Colab permettant de préparer des données textuelles pour un système de RAG (Retrieval Augmented Generation) appliqué à un règlement de Plan Local d'Urbanisme intercommunal (PLUi). Chaque script découpe du texte en morceaux (chunks) et génère un embedding vectoriel pour chacun via le modèle `all-MiniLM-L6-v2` (`sentence-transformers`), puis exporte le résultat au format JSON.
+Ce projet contient deux notebooks permettant de préparer des données textuelles pour un système de RAG (Retrieval Augmented Generation) appliqué à un règlement de Plan Local d'Urbanisme intercommunal (PLUi). Chaque script découpe du texte en morceaux (chunks) et génère un embedding vectoriel pour chacun via le modèle `all-MiniLM-L6-v2` (`sentence-transformers`), puis exporte le résultat au format JSON.
 
 ## Contenu du dépôt
 
