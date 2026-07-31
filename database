@@ -1,0 +1,26 @@
+# Connection
+
+## Database Information
+
+| Élément           | Valeur                                 |
+| ----------------- | -------------------------------------- |
+| Database Provider | MongoDB Atlas                          |
+| Project           | Project 0                              |
+| Cluster           | Cluster0                               |
+| Database          | Urbanisme                              |
+| Environment       | A def                                  |
+
+---
+
+## Connection URI
+
+```text
+mongodb+srv://sig_test:<db_password>@cluster0.rrvhdpu.mongodb.net/?appName=Cluster0
+```
+
+---
+
+## Atlas Console
+
+* Cluster : https://cloud.mongodb.com/v2/6a68b006600186184fc954e4#/explorer/6a68b0d68d1028fed26d551d
+* Project : https://cloud.mongodb.com/v2/6a68b006600186184fc954e4#/overview
