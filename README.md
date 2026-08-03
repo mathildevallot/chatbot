@@ -26,9 +26,7 @@ Cette approche présente plusieurs avantages :
 
 Le schéma ci-dessous présente le fonctionnement global du système.
 
-<p align="center">
-  <img src="chatbot/images/architecture_rag.png" alt="Architecture du système RAG" width="900">
-</p>
+![Architecture du système](chatbot/images/architecture_rag.png)
 
 ## État actuel du projet
 
