@@ -38,9 +38,15 @@ Les tests sont réalisés de manière manuelle afin d'évaluer la qualité des r
 
 ## Contenu du projet
 
-Le dépôt contient actuellement deux scripts principaux permettant de préparer les données textuelles nécessaires au système RAG :
+Le dépôt contient actuellement : 
 
-Ces scripts constituent la première étape de la chaîne de traitement avant l'interrogation par le modèle de langage.
+- deux scripts principaux permettant de préparer les données textuelles nécessaires au système RAG (en .py et les notebooks)
+- le paramétrage de la pipeline d'aggregation
+- les éléments de connexion à la DB (sauf mdp)
+- les éléments liés à 2 parcelles test, servant d'éléments de contexte
+- des exemples de résultats des 2 scripts
+- le paramétrage de l'indexe vectoriel utilisé pour la DB
+- le schéma de la DB
 
 ---
 
