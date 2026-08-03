@@ -8,9 +8,9 @@ L'objectif est de permettre une consultation plus intuitive de ces documents en 
 
 ---
 
-## Architecture envisagé 
+## Architecture envisagée 
 
-Après avoir étudié plusieurs approches pour intégrer un modèle de langage à une base documentaire (modèle affiné, modèle entraîné, ingénierie rapide avec contexte), notre choix s'est porté sur une architecture **RAG (Retrieval-Augmented Generation)**, de type séquence.
+Après avoir vu plusieurs approches pour intégrer un modèle de langage à une base documentaire (modèle affiné, modèle entraîné, ingénierie rapide avec contexte), nous étudions pour le moment l'architecture **RAG (Retrieval-Augmented Generation)**, de type séquence.
 
 Cette approche présente plusieurs avantages :
 
