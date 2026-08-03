@@ -24,7 +24,7 @@ Cette approche présente plusieurs avantages :
 
 ## Architecture générale
 
-Le schéma ci-dessous présente le fonctionnement global du système.
+Le schéma ci-dessous présente une idée de fonctionnement.
 
 ![Architecture RAG](architecture_rag.png)
 
