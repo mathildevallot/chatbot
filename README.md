@@ -43,8 +43,8 @@ Le dépôt contient actuellement :
 - deux scripts principaux permettant de préparer les données textuelles nécessaires au système RAG (en .py et les notebooks)
 - le paramétrage de la pipeline d'aggregation
 - les éléments de connexion à la DB (sauf mdp)
-- les éléments liés à 2 parcelles test, servant d'éléments de contexte
-- des exemples de résultats des 2 scripts
+- les éléments liés à 2 parcelles test, servants d'éléments de contexte
+- des exemples de résultats des deux scripts
 - le paramétrage de l'indexe vectoriel utilisé pour la DB
 - le schéma de la DB
 
