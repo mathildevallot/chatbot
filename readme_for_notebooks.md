@@ -83,7 +83,7 @@ Les bibliothèques Python sont installées automatiquement dans la première cel
 | Script | Traitement | Modèle d'embeddings | Dimensions | Taille de chunk | Chevauchement |
 |---|---|---|---|---|---|
 | `documents_plui.ipynb` | Texte extrait du PDF (page par page) | `all-MiniLM-L6-v2` | 384 | 500 caractères | 100 caractères |
-| `Untitled0.ipynb` | Question / texte saisi par l'utilisateur | `all-MiniLM-L6-v2` | 384 | 500 caractères | 100 caractères |
+| `question_utilisateur.ipynb` | Question / texte saisi par l'utilisateur | `all-MiniLM-L6-v2` | 384 | 500 caractères | 100 caractères |
 
 - Les deux scripts utilisent le **même modèle** (`all-MiniLM-L6-v2`, bibliothèque `sentence-transformers`) et la **même stratégie de chunking**, ce qui garantit que les embeddings du document et ceux des questions sont comparables dans le même espace vectoriel (similarité cosinus, produit scalaire...).
 - Paramètres de découpage par défaut : `CHUNK_SIZE = 500` caractères, `CHUNK_OVERLAP = 100` caractères. Ils sont modifiables en tête de chaque notebook — **si vous les changez, faites-le dans les deux scripts** pour garder une granularité cohérente entre base documentaire et requêtes.
