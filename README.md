@@ -56,7 +56,6 @@ Les travaux actuels visent à améliorer la pertinence des réponses générées
 
 * amélioration du prompt envoyé au LLM ;
 * augmentation du nombre d'échantillons récupérés (paramétrage de la pipeline RAG) ;
-* comparaison de différents modèles d'embeddings ;
 * expérimentation de différentes tailles de chunks et stratégies de découpage ;
 * optimisation des paramètres de recherche dans la base vectorielle ;
 * évaluation qualitative des réponses obtenues.
