@@ -1,91 +1,127 @@
-# Extraction et Embeddings
+# Le projet est composé de deux scripts :
 
-Ce projet contient deux notebooks permettant de préparer des données textuelles pour un système de RAG (Retrieval Augmented Generation) appliqué à un règlement de Plan Local d'Urbanisme intercommunal (PLUi). Chaque script découpe du texte en morceaux (chunks) et génère un embedding vectoriel pour chacun via le modèle `all-MiniLM-L6-v2` (`sentence-transformers`), puis exporte le résultat au format JSON.
-
-## Contenu du dépôt
-
-| Fichier | Description |
+| Script | Rôle |
 |---|---|
-| `reglement_plui` | Extrait le texte d'un document PDF, le découpe en chunks, génère les embeddings et exporte le tout en JSON. |
-| `question_utilisateur` | Découpe une question ou un texte saisi manuellement par l'utilisateur, génère les embeddings et exporte le résultat en JSON. |
+| `documents_plui.ipynb` | Génère un fichier JSON (texte + embeddings) à partir d'un PDF, à importer **manuellement** dans la base vectorielle |
+| `app.py` | Application complète : interroge la parcelle, effectue la recherche vectorielle dans MongoDB et génère la réponse via un LLM (Groq) |
 
-Les bibliothèques Python sont installées automatiquement dans la première cellule de chaque notebook :
+---
 
-- `pypdf` (uniquement pour `documents_plui.ipynb`)
-- `sentence-transformers`
-- `tqdm`
+## 1. `documents_plui.ipynb` — Préparation des documents (Google Colab)
 
-## 1. `reglement_plui` : Ingestion d'un document PDF
+Ce notebook prépare les données qui alimenteront la base vectorielle MongoDB. Il ne fait **aucun appel à MongoDB** : il produit un fichier `.json` téléchargeable, à insérer ensuite manuellement dans la collection.
 
-**Étapes du script :**
+### Étapes du notebook
 
-1. Installation des bibliothèques nécessaires (`pypdf`, `sentence-transformers`, `tqdm`).
-2. Chargement d'un fichier PDF depuis votre ordinateur (via `files.upload()`).
-3. Extraction du texte de chaque page du PDF.
-4. Découpage en chunks : texte segmenté en morceaux de 500 caractères avec un chevauchement de 100 caractères, afin de préserver le contexte entre les segments.
-5. Génération des embeddings pour chaque chunk avec le modèle `all-MiniLM-L6-v2`.
-6. Export JSON : création et téléchargement d'un fichier `<nom_du_pdf>_chunks_with_embeddings.json`.
-
-**Utilisation :**
-
-1. Ouvrir le notebook dans Google Colab.
-2. Exécuter les cellules dans l'ordre.
-3. À l'étape 2, sélectionner le fichier PDF à charger lorsque demandé.
-4. Le fichier JSON final se télécharge automatiquement en fin d'exécution.
-
-**Format de sortie :**
+1. **Installation des dépendances** : `pypdf`, `sentence-transformers`, `tqdm`.
+2. **Upload du PDF** via `google.colab.files.upload()`.
+3. **Extraction du texte** page par page avec `pypdf` (`PdfReader`), en conservant le numéro de page associé à chaque bloc de texte.
+4. **Découpage en chunks (chunking)** :
+   - Le texte de chaque page est d'abord normalisé (suppression des sauts de ligne/espaces multiples).
+   - Découpage **par nombre de caractères**, avec chevauchement (overlap) pour ne pas perdre le contexte entre deux chunks.
+   - **Paramètres utilisés :**
+     - `CHUNK_SIZE = 500` caractères
+     - `CHUNK_OVERLAP = 100` caractères
+   - Dédoublonnage des chunks strictement identiques.
+   - Chaque chunk conserve : `document_name`, `page_number`, `chunk_text`.
+5. **Génération des embeddings** avec `sentence-transformers` :
+   - **Modèle : `all-MiniLM-L6-v2`**
+   - Chaque `chunk_text` est encodé en un vecteur (converti en `list` pour la sérialisation JSON) et ajouté au champ `embedding`.
+6. **Export JSON** : un fichier `<nom_du_pdf>_chunks_with_embeddings.json` est généré et téléchargé automatiquement, avec la structure suivante par entrée :
 
 ```json
-[
-  {
-    "document_name": "200069409_reglement_20250626.pdf",
-    "page_number": 1,
-    "chunk_text": "Plan Local d'Urbanisme intercommunal (PLUi)...",
-    "embedding": [-0.0256, -0.0119, 0.0952, ...]
-  }
-]
+{
+  "document_name": "reglement_plui.pdf",
+  "page_number": 12,
+  "chunk_text": "Extrait du texte...",
+  "embedding": [0.0123, -0.045, ...]
+}
 ```
 
-## 2. `question_utilisateur` : Traitement d'une question / d'un texte libre
+### Import manuel dans MongoDB
 
-**Étapes du script :**
+Ce JSON doit ensuite être importé **manuellement** dans la collection MongoDB (`Documents` par défaut), avec un index vectoriel créé sur le champ `embedding` (via `$vectorSearch` / Atlas Vector Search).
 
-1. Installation des bibliothèques nécessaires (`sentence-transformers`, `tqdm`).
-2. Chargement du modèle d'embeddings `all-MiniLM-L6-v2`.
-3. Saisie interactive d'une question ou d'un texte via `input()`.
-4. Découpage en chunks (mêmes paramètres : 500 caractères, chevauchement de 100).
-5. Génération des embeddings pour chaque chunk.
-6. Export JSON : création et téléchargement d'un fichier `question_chunks_with_embeddings_<horodatage>.json`.
+---
 
-**Utilisation :**
+## 2. `app.py` — Application RAG (Gradio)
 
-1. Ouvrir le notebook dans Google Colab.
-2. Exécuter la cellule (fonction `process_question()` appelée automatiquement).
-3. Saisir le texte ou la question dans le champ interactif.
-4. Le fichier JSON se télécharge automatiquement.
-5. Pour traiter plusieurs questions, appeler à nouveau `process_question()` dans une nouvelle cellule.
+Ce script constitue l'**application de production** : interface Gradio + pipeline complet de bout en bout, sans étape manuelle.
 
-**Format de sortie :**
+### Pipeline exécuté à chaque question
 
-```json
-[
-  {
-    "chunk_text": "Texte de la question ou du chunk...",
-    "embedding": [-0.0256, -0.0119, 0.0952, ...]
-  }
-]
+1. **Récupération des données PLUi de la parcelle** (`get_plui`) :
+   - Interroge l'API ArcGIS FeatureServer du portail SIG SBAA en 3 étapes :
+     1. Résolution de `id_parcelle` à partir de la commune et du numéro de parcelle (couche `0`).
+     2. Récupération des `id_information_plui` liés à la parcelle (couche `18`).
+     3. Récupération du détail des informations PLUi (couche `17`).
+2. **Recherche vectorielle** (`vector_search`) :
+   - La question de l'utilisateur est encodée avec **`fastembed` / `TextEmbedding`**, en utilisant le même modèle que le notebook : `sentence-transformers/all-MiniLM-L6-v2`.
+   - Une agrégation MongoDB `$vectorSearch` est exécutée sur l'index vectoriel (`numCandidates: 100`, `limit: 5` par défaut) pour récupérer les chunks les plus pertinents (`chunk_text`, `document_name`, `page_number`, score de similarité).
+3. **Construction du contexte** : les informations de la parcelle (API ArcGIS) et les chunks retrouvés sont assemblés dans un prompt structuré.
+4. **Génération de la réponse** (`ask_llm`) via l'API **Groq** :
+   - Modèle : `llama-3.3-70b-versatile` (configurable)
+   - `temperature=0.1`, `max_tokens=2000`
+   - Un **prompt système** strict impose :
+     - réponse en français, ton pédagogique ;
+     - usage exclusif des extraits fournis (pas de règles générales inventées) ;
+     - citation systématique du document et de la page ;
+     - structure obligatoire : *Contexte de la parcelle → Réponse à la question → Règles applicables → Points à vérifier* ;
+     - une mention de non-validité juridique en fin de réponse.
+5. **Restitution** dans l'interface Gradio (`gr.Interface`).
+
+### Interface utilisateur
+
+Formulaire à 3 champs (`gr.Interface`) :
+- Code commune
+- Numéro de parcelle
+- Question libre
+
+Réponse affichée dans une zone de texte unique.
+
+### Variables d'environnement
+
+voir env.example
+
+### Installation & lancement
+
+```bash
+pip install gradio requests fastembed groq pymongo
+
+export MONGO_DB_PASSWORD="..."
+export GROQ_API_KEY="..."
+
+python app.py
 ```
 
-## Notes
+---
 
-### Modèles d'embeddings et paramètres de chunking
+## Résumé du modèle d'embedding et du chunking
 
-| Script | Traitement | Modèle d'embeddings | Dimensions | Taille de chunk | Chevauchement |
-|---|---|---|---|---|---|
-| `documents_plui.ipynb` | Texte extrait du PDF (page par page) | `all-MiniLM-L6-v2` | 384 | 500 caractères | 100 caractères |
-| `question_utilisateur.ipynb` | Question / texte saisi par l'utilisateur | `all-MiniLM-L6-v2` | 384 | 500 caractères | 100 caractères |
+| Paramètre | Valeur | Utilisé dans |
+|---|---|---|
+| Modèle d'embedding | `sentence-transformers/all-MiniLM-L6-v2` | Indexation (notebook, via `sentence-transformers`) **et** requêtage (`app.py`, via `fastembed`) |
+| Taille des chunks | 800 caractères | Notebook d'indexation |
+| Chevauchement (overlap) | 110 caractères | Notebook d'indexation |
+| Stratégie de découpage | Découpage brut par nombre de caractères, par page, avec dédoublonnage des chunks identiques | Notebook d'indexation |
 
-- Les deux scripts utilisent le **même modèle** (`all-MiniLM-L6-v2`, bibliothèque `sentence-transformers`) et la **même stratégie de chunking**, ce qui garantit que les embeddings du document et ceux des questions sont comparables dans le même espace vectoriel (similarité cosinus, produit scalaire...).
-- Paramètres de découpage par défaut : `CHUNK_SIZE = 500` caractères, `CHUNK_OVERLAP = 100` caractères. Ils sont modifiables en tête de chaque notebook — **si vous les changez, faites-le dans les deux scripts** pour garder une granularité cohérente entre base documentaire et requêtes.
-- `all-MiniLM-L6-v2` est un modèle léger (~80 Mo, rapide même sur CPU). Pour une meilleure qualité sémantique, `all-mpnet-base-v2` (768 dimensions) est une alternative, à condition de régénérer les embeddings des deux côtés avec le même modèle.
-- Les fichiers JSON générés peuvent alimenter une base vectorielle (FAISS, ChromaDB, Pinecone...) pour une application RAG.
+---
+
+## Architecture globale
+
+```
+┌────────────────────────┐        ┌──────────────────────────┐
+│  documents_plui.ipynb  │  JSON  │      Import manuel         │
+│  (extraction + chunks  │ ─────► │      dans MongoDB          │
+│   + embeddings)        │        │  (collection + index      │
+└────────────────────────┘        │   vectoriel Atlas)         │
+                                   └────────────┬───────────────┘
+                                                │
+                                                ▼
+┌────────────────────────┐    question    ┌──────────────────────────┐
+│   Interface Gradio      │ ─────────────► │        app.py             │
+│   (commune, parcelle,   │                │  1. API ArcGIS (parcelle) │
+│    question)            │                │  2. Recherche vectorielle │
+│                          │ ◄───────────── │  3. Génération LLM (Groq) │
+└────────────────────────┘    réponse      └──────────────────────────┘
+```
