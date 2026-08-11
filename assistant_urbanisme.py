@@ -20,9 +20,9 @@ from typing import Any
 
 import gradio as gr
 import requests
+from fastembed import TextEmbedding
 from groq import Groq
 from pymongo import MongoClient
-from sentence_transformers import SentenceTransformer
 
 
 # ---------------------------------------------------------------------------
@@ -43,6 +43,8 @@ COLLECTION_NAME = os.getenv("MONGO_COLLECTION", "Documents")
 VECTOR_INDEX = os.getenv("MONGO_VECTOR_INDEX", "vector_index_test_0508")
 
 MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+# IMPORTANT : garder le même modèle que celui utilisé pour indexer les
+# documents dans MongoDB, sinon les vecteurs ne seront plus comparables.
 EMBEDDING_MODEL_NAME = os.getenv(
     "EMBEDDING_MODEL",
     "sentence-transformers/all-MiniLM-L6-v2",
@@ -64,7 +66,19 @@ logger = logging.getLogger(__name__)
 
 http = requests.Session()
 
-_embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+# Chargement paresseux (lazy) du modèle d'embedding : on ne le charge qu'à
+# la première utilisation, pas au démarrage. Cela permet à Gradio d'ouvrir
+# le port immédiatement et évite un pic mémoire pendant le boot.
+_embedding_model: TextEmbedding | None = None
+
+
+def _get_embedding_model() -> TextEmbedding:
+    global _embedding_model
+    if _embedding_model is None:
+        logger.info("Chargement du modèle d'embedding (fastembed/ONNX)...")
+        _embedding_model = TextEmbedding(model_name=EMBEDDING_MODEL_NAME)
+    return _embedding_model
+
 
 _mongo_client: MongoClient | None = None
 _collection = None
@@ -188,10 +202,9 @@ def get_plui(commune: str, parcelle: str) -> dict[str, Any] | list[Any]:
 def generate_embedding(question: str) -> list[float]:
     """Génère l'embedding normalisé d'une question."""
 
-    vector = _embedding_model.encode(
-        question,
-        normalize_embeddings=True,
-    )
+    model = _get_embedding_model()
+    # fastembed renvoie un générateur de vecteurs numpy déjà normalisés.
+    (vector,) = model.embed([question])
     return vector.tolist()
 
 
@@ -233,8 +246,8 @@ def vector_search(question: str, limit: int = 5) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """
-Tu es un assistant spécialisé dans l’analyse des documents d’urbanisme
-(PLU, PLUi, règlements écrits, prescriptions graphiques et notes d’urbanisme).
+Tu es un assistant spécialisé dans l'analyse des documents d'urbanisme
+(PLU, PLUi, règlements écrits, prescriptions graphiques et notes d'urbanisme).
 
 Ta mission est de répondre uniquement à partir :
 - des extraits de documents fournis ;
