@@ -1,0 +1,5 @@
+gradio
+groq
+pymongo
+requests
+sentence-transformers
