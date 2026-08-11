@@ -1,7 +1,5 @@
---extra-index-url https://download.pytorch.org/whl/cpu
-torch
 gradio
+requests
 groq
 pymongo
-requests
-sentence-transformers
+fastembed
