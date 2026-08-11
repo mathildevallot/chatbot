@@ -5,6 +5,7 @@
 | `documents_plui.ipynb` | Génère un fichier JSON (texte + embeddings) à partir d'un PDF, à importer **manuellement** dans la base vectorielle |
 | `app.py` | Application complète : interroge la parcelle, effectue la recherche vectorielle dans MongoDB et génère la réponse via un LLM (Groq) |
 
+version python : python==3.11.x
 ---
 
 ## 1. `documents_plui.ipynb` — Préparation des documents (Google Colab)
@@ -56,7 +57,7 @@ Ce script constitue l'**application de production** : interface Gradio + pipelin
      2. Récupération des `id_information_plui` liés à la parcelle (couche `18`).
      3. Récupération du détail des informations PLUi (couche `17`).
 2. **Recherche vectorielle** (`vector_search`) :
-   - La question de l'utilisateur est encodée avec **`fastembed` / `TextEmbedding`**, en utilisant le même modèle que le notebook : `sentence-transformers/all-MiniLM-L6-v2`.
+   - La question de l'utilisateur est encodée avec **`fastembed` / `TextEmbedding`**, en utilisant le même modèle que le notebook : `sentence-transformers/all-MiniLM-L6-v2`. (le modèle n'est pas inclus dans le dépôt et sera téléchargé automatiquement)
    - Une agrégation MongoDB `$vectorSearch` est exécutée sur l'index vectoriel (`numCandidates: 100`, `limit: 5` par défaut) pour récupérer les chunks les plus pertinents (`chunk_text`, `document_name`, `page_number`, score de similarité).
 3. **Construction du contexte** : les informations de la parcelle (API ArcGIS) et les chunks retrouvés sont assemblés dans un prompt structuré.
 4. **Génération de la réponse** (`ask_llm`) via l'API **Groq** :
@@ -125,3 +126,12 @@ python app.py
 │                          │ ◄───────────── │  3. Génération LLM (Groq) │
 └────────────────────────┘    réponse      └──────────────────────────┘
 ```
+Accès réseau requis à l'exécution (pas seulement à l'installation)
+
+Au-delà de l'installation des paquets Python, le script a besoin, à chaque exécution, d'un accès sortant vers les services suivants :
+
+Service	Hôte	Usage
+API ArcGIS PLUi	: portail.sigsbaa.fr	: Récupération des données de la parcelle
+MongoDB Atlas	: cluster0.rrvhdpu.mongodb.net (ou valeur de MONGO_HOST)	: Recherche vectorielle (protocole SRV/DNS, port habituel 27017)
+API Groq	api.groq.com	: Génération de la réponse par le LLM
+Hugging Face / hébergement du modèle	(dépend de fastembed)	: Téléchargement du modèle d'embedding
