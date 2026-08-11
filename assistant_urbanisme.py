@@ -404,7 +404,8 @@ def main() -> None:
     """Point d'entrée de l'application."""
 
     demo = create_interface()
-    demo.launch()
+    port = int(os.getenv("PORT", 7860))
+    demo.launch(server_name="0.0.0.0", server_port=port)
 
 
 if __name__ == "__main__":
