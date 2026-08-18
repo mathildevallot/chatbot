@@ -42,7 +42,7 @@ DATABASE_NAME = os.getenv("MONGO_DATABASE", "Urbanisme_test_0508")
 COLLECTION_NAME = os.getenv("MONGO_COLLECTION", "Documents")
 VECTOR_INDEX = os.getenv("MONGO_VECTOR_INDEX", "vector_index_test_0508")
 
-MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+MODEL_NAME = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 # IMPORTANT : garder le même modèle que celui utilisé pour indexer les
 # documents dans MongoDB, sinon les vecteurs ne seront plus comparables.
 EMBEDDING_MODEL_NAME = os.getenv(
@@ -330,13 +330,13 @@ Réponds uniquement à partir des documents fournis.
                 {"role": "user", "content": prompt},
             ],
             temperature=0.1,
-            max_tokens=2000,
+            max_completion_tokens=2000,
         )
         return response.choices[0].message.content
 
     except Exception as exc:
-    logger.exception("Erreur lors de l'appel au LLM.")
-    return f"ERREUR GROQ : {type(exc).__name__} : {exc}"
+        logger.exception("Erreur lors de l'appel au LLM.")
+        return f"ERREUR GROQ : {type(exc).__name__} : {exc}"
 
 
 # ---------------------------------------------------------------------------
