@@ -334,9 +334,9 @@ Réponds uniquement à partir des documents fournis.
         )
         return response.choices[0].message.content
 
-    except Exception:
-        logger.exception("Erreur lors de l'appel au LLM.")
-        return None
+    except Exception as exc:
+    logger.exception("Erreur lors de l'appel au LLM.")
+    return f"ERREUR GROQ : {type(exc).__name__} : {exc}"
 
 
 # ---------------------------------------------------------------------------
